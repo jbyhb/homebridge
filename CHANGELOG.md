@@ -11,14 +11,6 @@ All notable changes to `homebridge` will be documented in this file. This projec
   - Node.js v18 and v20 are no longer supported. Homebridge v2 requires Node.js v22 or v24.
 
 - **For Plugin Developers:**
-  - **`api.matter` is now `MatterAPI | undefined`.** The Matter API was previously typed as always-defined, but the runtime getter threw if accessed when Matter was not loaded for the bridge. The type now honestly reflects that `api.matter` is only defined on bridges where Matter is configured (matches `api.isMatterEnabled() === true`). Plugins should access it via optional chaining or guard:
-    ```typescript
-    api.matter?.registerPlatformAccessories(...)         // defensive, no-ops when disabled
-    if (api.isMatterEnabled()) {
-      api.matter!.registerPlatformAccessories(...)       // explicit guard
-    }
-    ```
-    On bridges where Matter is configured, `api.matter` is now eagerly loaded *before* plugin initializers run — both on the main bridge and on child bridges — so plugins can use `api.matter` from their initializer (the `(api) => void` default export), platform/accessory constructor, or `didFinishLaunching` handler.
   - **HAP-NodeJS rename + major upgrade.** The dependency was renamed from `hap-nodejs` to `@homebridge/hap-nodejs` and bumped from `0.14.x` to `2.x`. Plugins importing directly from `hap-nodejs` must update both the package name and adjust to the v2 API. The recommended path is to import HAP types from `homebridge` (which re-exports them) rather than depending on `@homebridge/hap-nodejs` directly.
   - **ESM-only.** The published package is now ESM (`"type": "module"`). Plugins authored as CommonJS that load `homebridge` via `require()` will not work; use `import` syntax. Plugins must publish ESM (or dual ESM/CJS) builds.
   - **Output directory renamed `lib/` → `dist/`.** Plugins doing dirty-imports like `homebridge/lib/api` must switch to the public exports (`import { API } from 'homebridge'`).
@@ -70,7 +62,7 @@ All notable changes to `homebridge` will be documented in this file. This projec
 
 ### Homebridge Dependencies
 
-- `@homebridge/hap-nodejs` @ `v2.1.3`
+- `@homebridge/hap-nodejs` @ `v2.1.4`
 
 ## v1.11.4 (2026-03-29)
 
