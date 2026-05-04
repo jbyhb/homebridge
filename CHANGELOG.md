@@ -2,6 +2,12 @@
 
 All notable changes to `homebridge` will be documented in this file. This project tries to adhere to [Semantic Versioning](http://semver.org/).
 
+## v2.0.1 (Pending Release)
+
+### Changes
+
+- docs: add `CLAUDE.md` to repo
+
 ## v2.0.0 (2026-05-04)
 
 ### ⚠️ Breaking Changes
