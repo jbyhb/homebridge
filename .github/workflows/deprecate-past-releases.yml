@@ -1,0 +1,41 @@
+name: Deprecate Past Pre-Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      execute:
+        description: 'Execute the deprecation and cleanup actions. If false, the workflow will only log the actions that would be taken without making any changes.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  deprecate-previous-pre-release-data:
+    if: ${{ github.ref == 'refs/heads/latest' && github.repository == 'homebridge/homebridge' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Update npm to latest version
+        run: npm install -g npm@latest
+
+      - name: Deprecate previous pre-release npm versions
+        run: bash .github/scripts/deprecate_npm_prereleases.sh
+        env:
+          EXECUTE: ${{ inputs.execute }}
+          NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
+
+      - name: Delete previous pre-release GitHub releases and Git tags
+        run: bash .github/scripts/github_prerelease_cleanup.sh
+        env:
+          EXECUTE: ${{ inputs.execute }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
