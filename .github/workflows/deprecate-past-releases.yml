@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   deprecate-previous-pre-release-data:
@@ -25,6 +24,7 @@ jobs:
         with:
           node-version: 'lts/*'
           registry-url: 'https://registry.npmjs.org/'
+          # actions/setup-node writes a .npmrc that reads NODE_AUTH_TOKEN from the environment
 
       - name: Update npm to latest version
         run: npm install -g npm@latest
@@ -33,7 +33,7 @@ jobs:
         run: bash .github/scripts/deprecate_npm_prereleases.sh
         env:
           EXECUTE: ${{ inputs.execute }}
-          NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPRECATION_TOKEN }}
 
       - name: Delete previous pre-release GitHub releases and Git tags
         run: bash .github/scripts/github_prerelease_cleanup.sh
