@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -uo pipefail
+
 
 # Defaults to dry run unless --execute flag or EXECUTE=1 env var is set
 EXECUTE=${EXECUTE:-0}
@@ -52,38 +54,42 @@ summary() {
 
 echo ""
 echo "Finding pre-release GitHub releases..."
-gh release list --limit 100 --json tagName --jq '.[] | select(.tagName | test("-"; "i")) | .tagName' | while read -r TAG; do
+while read -r TAG; do
   BASE_VERSION="${TAG%%-*}"
   BASE_VERSION_NO_V="${BASE_VERSION#v}"
   if [ "$(printf "%s\n%s" "$BASE_VERSION_NO_V" "$LATEST_VERSION" | sort -V | tail -n1)" == "$LATEST_VERSION" ]; then
     if [ "$EXECUTE" = "0" ]; then
       echo "* [DRY RUN] Would run: gh release delete \"$TAG\" --yes"
+      DELETED_RELEASES+=("$TAG")
     else
       echo "* Deleting GitHub release: $TAG"
       gh release delete "$TAG" --yes
+      DELETED_RELEASES+=("$TAG")
     fi
   else
     echo "* Skipping release: $TAG (base version $BASE_VERSION_NO_V is newer than $LATEST_VERSION)"
   fi
-done
+done < <(gh release list --limit 100 --json tagName --jq '.[] | select(.tagName | test("-"; "i")) | .tagName')
 
 echo ""
 echo "Finding pre-release Git tags..."
 git fetch --tags
-git tag -l "*-*" | while read -r TAG; do
+while read -r TAG; do
   BASE_VERSION="${TAG%%-*}"
   BASE_VERSION_NO_V="${BASE_VERSION#v}"
   if [ "$(printf "%s\n%s" "$BASE_VERSION_NO_V" "$LATEST_VERSION" | sort -V | tail -n1)" == "$LATEST_VERSION" ]; then
     if [ "$EXECUTE" = "0" ]; then
       echo "* [DRY RUN] Would run: git push origin --delete refs/tags/$TAG"
+      DELETED_TAGS+=("$TAG")
     else
       echo "* Deleting tag: $TAG"
       git push origin --delete "refs/tags/$TAG"
+      DELETED_TAGS+=("$TAG")
     fi
   else
     echo "* Skipping tag: $TAG (base version $BASE_VERSION_NO_V is newer than $LATEST_VERSION)"
   fi
-done
+done < <(git tag -l "*-*")
 
 summary ""
 summary "## GitHub Pre-release Cleanup Summary"
@@ -91,4 +97,19 @@ if [ "$EXECUTE" = "0" ]; then
   summary "> **DRY RUN MODE** - no releases or tags were actually deleted."
 fi
 summary "* Latest version: \`$LATEST_VERSION\`"
-summary "* See step log above for full details of processed releases and tags."
+if [ ${#DELETED_RELEASES[@]} -eq 0 ]; then
+  summary "* No GitHub releases were deleted."
+else
+  summary "* Deleted ${#DELETED_RELEASES[@]} GitHub releases:"
+  for TAG in "${DELETED_RELEASES[@]}"; do
+    summary "  * \`$TAG\`"
+  done
+fi
+if [ ${#DELETED_TAGS[@]} -eq 0 ]; then
+  summary "* No Git tags were deleted."
+else
+  summary "* Deleted ${#DELETED_TAGS[@]} Git tags:"
+  for TAG in "${DELETED_TAGS[@]}"; do
+    summary "  * \`$TAG\`"
+  done
+fi

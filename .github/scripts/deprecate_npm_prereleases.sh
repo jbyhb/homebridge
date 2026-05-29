@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -uo pipefail
 
 # Defaults to dry run unless --execute flag or EXECUTE=1 env var is set
 EXECUTE=${EXECUTE:-0}
@@ -50,8 +51,7 @@ echo "Fetching pre-release (alpha/beta) versions of homebridge from npm..."
 # Extract versions as plain list, then sort with sort -V for full semver ordering
 PRE_RELEASE_VERSIONS=$(curl -s --compressed -H "accept: application/vnd.npm.install-v1+json" "https://registry.npmjs.org/$PACKAGE" \
   | jq -r '[.versions[] | select(.deprecated == null and (.version | test("-alpha\\.|-beta\\."))) | .version] | .[]' \
-  | sort -V \
-  | tail -r)
+  | sort -V -r)
 PRE_RELEASE_COUNT=$(echo "$PRE_RELEASE_VERSIONS" | grep -c .)
 echo "Found $PRE_RELEASE_COUNT pre-release versions (keeping 5 most recent):"
 # Skip the 5 most recent pre-release versions, deprecate the rest
