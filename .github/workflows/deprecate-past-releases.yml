@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       execute:
-        description: 'Execute the deprecation and cleanup actions. Default is dry run (false).'
+        description: Execute the deprecation and cleanup actions. Default is dry run (false).
         type: boolean
         default: false
 
