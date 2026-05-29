@@ -29,11 +29,15 @@ jobs:
       - name: Update npm to latest version
         run: npm install -g npm@latest
 
+      - name: Configure npm authentication
+        run: npm config set //registry.npmjs.org/:_authToken "${NODE_AUTH_TOKEN}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPRECATION_TOKEN }}
+
       - name: Deprecate previous pre-release npm versions
         run: bash .github/scripts/deprecate_npm_prereleases.sh
         env:
           EXECUTE: ${{ inputs.execute }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPRECATION_TOKEN }}
 
       - name: Delete previous pre-release GitHub releases and Git tags
         run: bash .github/scripts/github_prerelease_cleanup.sh
