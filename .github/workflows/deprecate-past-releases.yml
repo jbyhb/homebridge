@@ -1,5 +1,5 @@
 name: Deprecate Past Pre-Releases
-run-name: Deprecate Past Pre-Releases - ${{ inputs.execute == 'true' && 'Execute' || 'Dry Run' }}
+run-name: Deprecate Past Pre-Releases - ${{ inputs.execute && 'Execute' || 'Dry Run' }}
 
 on:
   workflow_dispatch:
@@ -24,8 +24,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
-          registry-url: 'https://registry.npmjs.org/'
-          # actions/setup-node writes a .npmrc that reads NODE_AUTH_TOKEN from the environment
+          # registry-url intentionally omitted - auth is configured manually below
 
       - name: Update npm to latest version
         run: npm install -g npm@latest
