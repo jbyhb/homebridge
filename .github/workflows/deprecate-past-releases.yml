@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       execute:
-        description: 'Execute the deprecation and cleanup actions. If false, the workflow will only log the actions that would be taken without making any changes.'
+        description: 'Execute the deprecation and cleanup actions. Default is dry run (false).'
         type: boolean
         default: false
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   deprecate-previous-pre-release-data:
