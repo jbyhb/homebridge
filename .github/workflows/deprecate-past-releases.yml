@@ -1,4 +1,5 @@
 name: Deprecate Past Pre-Releases
+run-name: Deprecate Past Pre-Releases - ${{ inputs.execute == 'true' && 'Execute' || 'Dry Run' }}
 
 on:
   workflow_dispatch:
@@ -30,7 +31,12 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Configure npm authentication
-        run: npm config set //registry.npmjs.org/:_authToken "${NODE_AUTH_TOKEN}"
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "Error: NPM_DEPRECATION_TOKEN secret is not set or is empty." >&2
+            exit 1
+          fi
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPRECATION_TOKEN }}
 
