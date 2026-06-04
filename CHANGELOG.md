@@ -2,7 +2,7 @@
 
 All notable changes to `homebridge` will be documented in this file. This project tries to adhere to [Semantic Versioning](http://semver.org/).
 
-## v2.0.3 (Pending Release)
+## v2.1.0 (2026-06-04)
 
 ### Changes
 
@@ -33,6 +33,7 @@ All notable changes to `homebridge` will be documented in this file. This projec
 - chore: add test-file lint rules and fix existing violations
 - refactor(matter): delegate log rendering to matter.js
 - chore: dependency updates
+- docs: refresh copilot instruction file (#3949) (@Sev7een)
 
 ### Homebridge Dependencies
 
