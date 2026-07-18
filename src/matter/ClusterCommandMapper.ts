@@ -186,12 +186,14 @@ const CLUSTER_COMMAND_MAPPINGS: Record<string, AttributeToCommandMapping> = {
         }
       }
 
-      // Or via lockState attribute
-      if ('lockState' in attributes) {
-        // 1 = Locked, 2 = Unlocked
-        return {
-          command: attributes.lockState === 1 ? 'lockDoor' : 'unlockDoor',
-        }
+      // Or via lockState attribute (1 = Locked, 2 = Unlocked). Other enum
+      // values (e.g. 0 = NotFullyLocked, 3 = Unlatched) must not trigger a
+      // command - especially not an unlock.
+      if (attributes.lockState === 1) {
+        return { command: 'lockDoor' }
+      }
+      if (attributes.lockState === 2) {
+        return { command: 'unlockDoor' }
       }
 
       return null

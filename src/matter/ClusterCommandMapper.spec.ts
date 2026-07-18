@@ -213,6 +213,12 @@ describe('clusterCommandMapper', () => {
       const result = mapAttributesToCommand('doorLock', { _command: 'lockDoor' })
       expect(result).toEqual({ command: 'lockDoor' })
     })
+
+    it('should return null for unexpected lockState values instead of unlocking', () => {
+      expect(mapAttributesToCommand('doorLock', { lockState: 0 })).toBeNull()
+      expect(mapAttributesToCommand('doorLock', { lockState: 3 })).toBeNull()
+      expect(mapAttributesToCommand('doorLock', { lockState: null })).toBeNull()
+    })
   })
 
   describe('valveConfigurationAndControl cluster', () => {
