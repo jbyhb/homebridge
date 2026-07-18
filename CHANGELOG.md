@@ -24,6 +24,7 @@ All notable changes to `homebridge` will be documented in this file. This projec
 - fix(matter): ignore unexpected door lock state values
 - fix(matter): coerce bigint values in accessory state updates
 - fix(matter): allocate child bridge matter port from the matter pool
+- docs: regenerate docs for `v2.2.0`
 
 ### Homebridge Dependencies
 
