@@ -181,7 +181,10 @@ export class ChildBridgeMatterManager extends BaseMatterManager {
     if (!this.matterConfig.port) {
       // Generate a unique username for Matter port allocation
       const matterUsername = appendUsernameSuffix(this.bridgeConfig.username, 'MATTER')
-      const matterPort = await this.externalPortService.requestPort(matterUsername)
+      // Use the Matter port allocator (falls back to 5530-5541 when no range is
+      // configured), NOT requestPort() which draws from the HAP external-port
+      // pool and returns undefined unless `ports` is set.
+      const matterPort = await this.externalPortService.requestMatterPort(matterUsername)
 
       if (!matterPort) {
         throw new Error(

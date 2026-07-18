@@ -23,6 +23,7 @@ All notable changes to `homebridge` will be documented in this file. This projec
 - feat(matter): add disableIpv4 option for ipv6-only matter mdns
 - fix(matter): ignore unexpected door lock state values
 - fix(matter): coerce bigint values in accessory state updates
+- fix(matter): allocate child bridge matter port from the matter pool
 
 ### Homebridge Dependencies
 

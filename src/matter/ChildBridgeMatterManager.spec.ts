@@ -44,6 +44,7 @@ describe('childBridgeMatterManager', () => {
     // Create mock external port service
     mockExternalPortService = {
       requestPort: vi.fn(),
+      requestMatterPort: vi.fn(),
     } as any
 
     // Create mock plugin manager
@@ -362,6 +363,28 @@ describe('childBridgeMatterManager', () => {
       expect((m as any).matterServer).toBeUndefined()
     })
 
+    it('allocates a Matter port via requestMatterPort (not the HAP requestPort) when none is configured', async () => {
+      vi.mocked(mockExternalPortService.requestMatterPort).mockResolvedValue(5530)
+      const m = createManager({} as MatterConfig)
+      // Stub the actual server startup — we only care about port allocation here.
+      vi.spyOn(m as any, 'startMatterServer').mockResolvedValue(undefined)
+
+      await m.initialize()
+
+      expect(mockExternalPortService.requestMatterPort).toHaveBeenCalledTimes(1)
+      expect(mockExternalPortService.requestPort).not.toHaveBeenCalled()
+      // The allocated port is written back onto the config for the server start.
+      expect((m as any).matterConfig.port).toBe(5530)
+    })
+
+    it('throws a descriptive error when Matter port allocation returns nothing', async () => {
+      vi.mocked(mockExternalPortService.requestMatterPort).mockResolvedValue(undefined)
+      const m = createManager({} as MatterConfig)
+      vi.spyOn(m as any, 'startMatterServer').mockResolvedValue(undefined)
+
+      await expect(m.initialize()).rejects.toThrow('Failed to allocate Matter port')
+    })
+
     it('externalsOnly mode: attaches external listeners + bridged drop stubs, does NOT start the bridge server', async () => {
       const m = createManager({ enabled: false, externalsOnly: true } as MatterConfig)
       await m.initialize()
@@ -369,6 +392,7 @@ describe('childBridgeMatterManager', () => {
       // No bridge server started.
       expect((m as any).matterServer).toBeUndefined()
       expect(mockExternalPortService.requestPort).not.toHaveBeenCalled()
+      expect(mockExternalPortService.requestMatterPort).not.toHaveBeenCalled()
 
       // External listeners attached.
       const attached = vi.mocked(mockApi.on).mock.calls.map(c => c[0])
