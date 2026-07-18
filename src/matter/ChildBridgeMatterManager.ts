@@ -238,6 +238,7 @@ export class ChildBridgeMatterManager extends BaseMatterManager {
       firmwareRevision: this.bridgeConfig.firmwareRevision || getVersion(),
       serialNumber,
       networkInterfaces,
+      disableIpv4: matterConfig.disableIpv4,
     })
 
     await this.matterServer.start()
@@ -332,6 +333,7 @@ export class ChildBridgeMatterManager extends BaseMatterManager {
             portService: this.externalPortService,
             networkInterfaces,
             debugModeEnabled: this.bridgeOptions.debugModeEnabled,
+            disableIpv4: this.matterConfig?.disableIpv4,
           })
 
           if (!result) {

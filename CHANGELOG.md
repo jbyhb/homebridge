@@ -20,6 +20,7 @@ All notable changes to `homebridge` will be documented in this file. This projec
 - chore(ci): bump actions/setup-node to v7
 - fix: preserve concurrent accessory registration during cache restore (#3919) (@zerafachris)
 - feat(matter): add electrical power and energy measurement clusters (#3962)
+- feat(matter): add disableIpv4 option for ipv6-only matter mdns
 
 ### Homebridge Dependencies
 

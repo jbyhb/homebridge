@@ -360,6 +360,17 @@ export interface MatterConfig extends Record<string, unknown> {
    * `bridge.hap.externalsOnly`.
    */
   externalsOnly?: boolean
+
+  /**
+   * When `true`, matter.js mDNS runs IPv6-only — no IPv4 sockets are opened
+   * on port 5353. The Matter spec requires IPv6; IPv4 discovery is optional.
+   *
+   * Useful when Matter's own mDNS responder competes with avahi-daemon for
+   * IPv4 port 5353 on the same host (symptom: `<hostname>.local` stops
+   * resolving over IPv4 while direct IP access still works). Missing or
+   * `false` keeps matter.js's default dual-stack behaviour.
+   */
+  disableIpv4?: boolean
 }
 
 // Note: the canonical MatterServerEvents declaration is at the bottom of this file.

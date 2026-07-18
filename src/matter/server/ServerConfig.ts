@@ -102,5 +102,6 @@ export function validateAndSanitizeConfig(config: MatterServerConfig): MatterSer
     debugModeEnabled,
     externalAccessory,
     networkInterfaces: config.networkInterfaces,
+    disableIpv4: config.disableIpv4,
   }
 }

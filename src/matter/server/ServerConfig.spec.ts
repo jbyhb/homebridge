@@ -137,6 +137,16 @@ describe('serverConfig', () => {
       expect(result.networkInterfaces).toBeUndefined()
     })
 
+    it('should pass through disableIpv4', () => {
+      const result = validateAndSanitizeConfig({ ...validConfig, disableIpv4: true })
+      expect(result.disableIpv4).toBe(true)
+    })
+
+    it('should leave disableIpv4 undefined when not provided', () => {
+      const result = validateAndSanitizeConfig(validConfig)
+      expect(result.disableIpv4).toBeUndefined()
+    })
+
     it('should collect multiple errors and report all at once', () => {
       // Use the toThrow matcher (instead of try/catch with conditional expects)
       // so the message assertions are unconditional. Each call re-runs validation.

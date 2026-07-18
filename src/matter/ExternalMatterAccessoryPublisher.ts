@@ -28,6 +28,8 @@ export interface ExternalAccessoryPublishContext {
   networkInterfaces?: string[]
   /** Whether debug mode is enabled */
   debugModeEnabled?: boolean
+  /** When `true`, Matter mDNS runs IPv6-only (from `matter.disableIpv4` config) */
+  disableIpv4?: boolean
 }
 
 /**
@@ -102,6 +104,7 @@ export async function publishExternalMatterAccessory(
     debugModeEnabled: context.debugModeEnabled,
     externalAccessory: true, // external accessory, added before server runs
     networkInterfaces: context.networkInterfaces,
+    disableIpv4: context.disableIpv4,
   })
 
   let started = false

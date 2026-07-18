@@ -259,6 +259,7 @@ export class MatterBridgeManager extends BaseMatterManager {
         serialNumber,
         debugModeEnabled: this.options.debugModeEnabled,
         networkInterfaces,
+        disableIpv4: this.config.bridge.matter?.disableIpv4,
       })
 
       // Start the Matter server
@@ -346,6 +347,7 @@ export class MatterBridgeManager extends BaseMatterManager {
             portService: this.externalPortService,
             networkInterfaces,
             debugModeEnabled: this.options.debugModeEnabled,
+            disableIpv4: this.config.bridge.matter?.disableIpv4,
           })
 
           if (!result) {

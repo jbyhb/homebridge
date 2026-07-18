@@ -194,6 +194,9 @@ export interface MatterServerConfig {
 
   /** Network interfaces to bind to (inherited from `bridge.bind` config) */
   networkInterfaces?: string[]
+
+  /** When `true`, Matter mDNS runs IPv6-only (inherited from `matter.disableIpv4` config) */
+  disableIpv4?: boolean
 }
 
 /**

@@ -292,6 +292,17 @@ export class ServerLifecycle {
         delete mdnsVars.networkInterface
         log.debug('Cleared mdns.networkInterface from environment before ServerNode creation')
       }
+      if (typeof mdnsVars === 'object' && mdnsVars !== null && 'ipv4' in mdnsVars) {
+        delete mdnsVars.ipv4
+        log.debug('Cleared mdns.ipv4 from environment before ServerNode creation')
+      }
+
+      // Set mdns.ipv4 BEFORE creating the ServerNode — MdnsService reads it at
+      // construction time, like mdns.networkInterface below.
+      if (deps.config.disableIpv4) {
+        Environment.default.vars.set('mdns.ipv4', false)
+        log.info('Matter mDNS configured as IPv6-only (disableIpv4: true)')
+      }
 
       // Set mdns.networkInterface BEFORE creating the ServerNode.
       if (deps.config.networkInterfaces && deps.config.networkInterfaces.length > 0) {

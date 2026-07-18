@@ -68,7 +68,7 @@ const sharedVars = makeFakeVars(sharedVarsState)
 
 // Track ServerNode.create invocations so tests can anchor "before/after" assertions
 // against the network.interface clear/set operations on sharedVars.
-const serverNodeCreateCalls: Array<{ t: number, networkInterfaceAtCreate: unknown }> = []
+const serverNodeCreateCalls: Array<{ t: number, networkInterfaceAtCreate: unknown, mdnsIpv4AtCreate: unknown }> = []
 let serverNodeCreateInvocationIndex = 0
 
 vi.mock('@matter/general', () => ({
@@ -96,9 +96,11 @@ vi.mock('@matter/main', () => ({
       // Snapshot network.interface at the moment of creation so tests can prove
       // the environment was clean before matter.js's ValueCaster would have run.
       const networkVars = sharedVarsState.store.network as Record<string, unknown> | undefined
+      const mdnsVars = sharedVarsState.store.mdns as Record<string, unknown> | undefined
       serverNodeCreateCalls.push({
         t: ++serverNodeCreateInvocationIndex,
         networkInterfaceAtCreate: networkVars?.interface,
+        mdnsIpv4AtCreate: mdnsVars?.ipv4,
       })
       return {
         run: vi.fn(() => Promise.resolve()),
@@ -283,6 +285,55 @@ describe('serverLifecycle — network.interface env var handling (#3910)', () =>
 
       await expect(lifecycle.start(createMockDeps())).resolves.not.toThrow()
       expect((sharedVarsState.store.network as Record<string, unknown>).unrelated).toBe(true)
+    })
+  })
+
+  describe('setting mdns.ipv4 before ServerNode creation', () => {
+    it('sets mdns.ipv4 to false before ServerNode.create when disableIpv4 is true', async () => {
+      const deps = createMockDeps({
+        config: {
+          ...createMockDeps().config,
+          disableIpv4: true,
+        },
+      })
+
+      await lifecycle.start(deps)
+
+      expect(serverNodeCreateCalls).toHaveLength(1)
+      expect(serverNodeCreateCalls[0].mdnsIpv4AtCreate).toBe(false)
+    })
+
+    it('does not set mdns.ipv4 when disableIpv4 is not configured', async () => {
+      await lifecycle.start(createMockDeps())
+
+      const setCalls = sharedVarsState.calls.filter(c => c.op === 'set' && c.name === 'mdns.ipv4')
+      expect(setCalls).toHaveLength(0)
+      expect(serverNodeCreateCalls[0].mdnsIpv4AtCreate).toBeUndefined()
+    })
+
+    it('does not set mdns.ipv4 when disableIpv4 is false', async () => {
+      const deps = createMockDeps({
+        config: {
+          ...createMockDeps().config,
+          disableIpv4: false,
+        },
+      })
+
+      await lifecycle.start(deps)
+
+      const setCalls = sharedVarsState.calls.filter(c => c.op === 'set' && c.name === 'mdns.ipv4')
+      expect(setCalls).toHaveLength(0)
+    })
+
+    it('clears a stale mdns.ipv4 left by a previous server instance', async () => {
+      sharedVarsState.store.mdns = { ipv4: false, someOtherKey: 'preserved' }
+
+      await lifecycle.start(createMockDeps())
+
+      const mdnsVars = sharedVarsState.store.mdns as Record<string, unknown>
+      expect('ipv4' in mdnsVars).toBe(false)
+      expect(mdnsVars.someOtherKey).toBe('preserved')
+      expect(serverNodeCreateCalls[0].mdnsIpv4AtCreate).toBeUndefined()
     })
   })
 
