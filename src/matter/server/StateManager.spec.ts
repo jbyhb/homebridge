@@ -55,6 +55,21 @@ describe('stateManager', () => {
       expect(endpoint.act).not.toHaveBeenCalled()
     })
 
+    it('coerces bigint attribute values to numbers before applying and caching', async () => {
+      const endpoint = createMockEndpoint()
+      const manager = createManager(endpoint)
+
+      await manager.updateAccessoryState('uuid-1', 'electricalPowerMeasurement', {
+        activePower: 5_000_000n,
+      })
+
+      expect(endpoint.set).toHaveBeenCalledWith({ electricalPowerMeasurement: { activePower: 5_000_000 } })
+      // The cached clusters object must be JSON-serializable (accessory cache, UI IPC)
+      const accessory = (manager as any).accessories.get('uuid-1')
+      expect(accessory.clusters.electricalPowerMeasurement.activePower).toBe(5_000_000)
+      expect(() => JSON.stringify(accessory.clusters)).not.toThrow()
+    })
+
     it('routes energy readings through setMeasurement so the Matter events fire', async () => {
       const setMeasurement = vi.fn()
       const behaviorClass = { name: 'EEMServer' }

@@ -82,6 +82,12 @@ export class StateManager {
       throw new MatterDeviceError(`Accessory ${uuid} not found or not registered`)
     }
 
+    // Plugins may pass bigint for int64 attributes (e.g. energy readings).
+    // Coerce once at entry: the values also land in accessory.clusters, which
+    // is JSON-serialized by the accessory cache and the UI IPC channel -
+    // JSON.stringify throws on bigint. matter.js accepts number for int64.
+    attributes = coerceBigintsToNumbers(attributes) as Record<string, unknown>
+
     let targetEndpoint: Endpoint
     let targetClusters: InternalMatterAccessory['clusters'] | InternalMatterAccessoryPart['clusters']
     let displayName: string
