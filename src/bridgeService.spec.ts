@@ -6,7 +6,13 @@ import { Accessory, Categories, CharacteristicWarningType, uuid } from '@homebri
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HomebridgeAPI, InternalAPIEvent } from './api.js'
-import { BridgeService, isHapConfigEnabled, isHapExternalsOnly, validateHapConfig } from './bridgeService.js'
+import {
+  BridgeService,
+  isHapConfigEnabled,
+  isHapExternalsOnly,
+  shouldAddIdentifyingMaterial,
+  validateHapConfig,
+} from './bridgeService.js'
 import { Logger } from './logger.js'
 import { PlatformAccessory } from './platformAccessory.js'
 
@@ -404,6 +410,25 @@ describe('bridgeService', () => {
       expect(externalPortService.requestPort).toHaveBeenCalledTimes(1)
     })
 
+    it('forwards hap.disableIdentifyingMaterial to external accessories', async () => {
+      externalPortService.requestPort.mockResolvedValue(50002)
+      const service = new BridgeService(
+        api,
+        pluginManager,
+        externalPortService,
+        makeBridgeOptions(),
+        makeBridgeConfig({ hap: { disableIdentifyingMaterial: true } }),
+      )
+
+      const accessory = makePlatformAccessory('External-Exact-Name')
+      const publishSpy = vi.spyOn(accessory._associatedHAPAccessory, 'publish').mockResolvedValue(undefined)
+
+      await service.handlePublishExternalAccessories([accessory])
+
+      const publishInfo = publishSpy.mock.calls[0][0] as any
+      expect(publishInfo.addIdentifyingMaterial).toBe(false)
+    })
+
     it('throws when an accessory address collides with an existing one', async () => {
       externalPortService.requestPort.mockResolvedValue(50000)
       const service = new BridgeService(api, pluginManager, externalPortService, makeBridgeOptions(), makeBridgeConfig())
@@ -729,6 +754,17 @@ describe('bridgeService', () => {
       expect(publishInfo.addIdentifyingMaterial).toBe(true)
     })
 
+    it('disables identifying material when configured in the HAP block', () => {
+      const config = makeBridgeConfig({ hap: { disableIdentifyingMaterial: true } })
+      const service = new BridgeService(api, pluginManager, externalPortService, makeBridgeOptions(), config)
+      const publishSpy = vi.spyOn(service.bridge, 'publish').mockResolvedValue(undefined)
+
+      service.publishBridge()
+
+      const publishInfo = publishSpy.mock.calls[0][0] as any
+      expect(publishInfo.addIdentifyingMaterial).toBe(false)
+    })
+
     it('includes setupID when it is exactly 4 characters', () => {
       const config = makeBridgeConfig({ setupID: 'AB12' })
       const service = new BridgeService(api, pluginManager, externalPortService, makeBridgeOptions(), config)
@@ -822,6 +858,21 @@ describe('bridgeService', () => {
     })
   })
 
+  describe('shouldAddIdentifyingMaterial', () => {
+    it('defaults to true when disabling identifying material is omitted or false', () => {
+      expect(shouldAddIdentifyingMaterial(undefined)).toBe(true)
+      expect(shouldAddIdentifyingMaterial({})).toBe(true)
+      expect(shouldAddIdentifyingMaterial(false)).toBe(true)
+      expect(shouldAddIdentifyingMaterial(true)).toBe(true)
+      expect(shouldAddIdentifyingMaterial(null as any)).toBe(true)
+      expect(shouldAddIdentifyingMaterial({ disableIdentifyingMaterial: false })).toBe(true)
+    })
+
+    it('honours an explicit true value', () => {
+      expect(shouldAddIdentifyingMaterial({ disableIdentifyingMaterial: true })).toBe(false)
+    })
+  })
+
   describe('validateHapConfig', () => {
     it('is a no-op when hap is undefined', () => {
       const cfg = makeBridgeConfig()
@@ -831,6 +882,34 @@ describe('bridgeService', () => {
     it('accepts an empty hap object', () => {
       const cfg = makeBridgeConfig({ hap: {} })
       expect(() => validateHapConfig(cfg, { bridgeLabel: 'main' })).not.toThrow()
+    })
+
+    it('rejects a non-boolean hap.disableIdentifyingMaterial value', () => {
+      const cfg = makeBridgeConfig({ hap: { disableIdentifyingMaterial: 'true' } })
+      expect(() => validateHapConfig(cfg, { bridgeLabel: 'main' })).toThrow(/disableIdentifyingMaterial.*boolean/)
+    })
+
+    it('warns about mDNS collisions when hap.disableIdentifyingMaterial is true', () => {
+      const warnSpy = vi.spyOn(Logger.internal, 'warn').mockImplementation(() => {})
+      const cfg = makeBridgeConfig({ hap: { disableIdentifyingMaterial: true } })
+
+      validateHapConfig(cfg, { bridgeLabel: 'main bridge' })
+
+      expect(warnSpy).toHaveBeenCalledOnce()
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/^main bridge:/))
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/identifying material is disabled/i))
+    })
+
+    it('does not warn when hap.disableIdentifyingMaterial is omitted or false', () => {
+      const warnSpy = vi.spyOn(Logger.internal, 'warn').mockImplementation(() => {})
+
+      validateHapConfig(makeBridgeConfig({ hap: {} }), { bridgeLabel: 'main bridge' })
+      validateHapConfig(
+        makeBridgeConfig({ hap: { disableIdentifyingMaterial: false } }),
+        { bridgeLabel: 'main bridge' },
+      )
+
+      expect(warnSpy).not.toHaveBeenCalled()
     })
 
     it('accepts hap.enabled: false on its own', () => {

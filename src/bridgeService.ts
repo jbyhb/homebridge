@@ -78,6 +78,13 @@ export interface BridgeHapConfig {
    * warns and normalises `enabled` to `false` rather than rejecting the config.
    */
   externalsOnly?: boolean
+
+  /**
+   * Whether to disable HAP-NodeJS's `addIdentifyingMaterial` publish option,
+   * which appends identifying material derived from the username to the
+   * bridge display name and mDNS service instance name. Defaults to `false`.
+   */
+  disableIdentifyingMaterial?: boolean
 }
 
 export interface BridgeConfiguration {
@@ -143,10 +150,20 @@ export function isHapExternalsOnly(hap: BridgeHapConfig | boolean | undefined): 
 }
 
 /**
+ * Whether HAP-NodeJS should enable its `addIdentifyingMaterial` publish option.
+ * Missing config, an explicit `disableIdentifyingMaterial: false`, and the
+ * deprecated boolean `hap` form preserve the historical behavior (`true`).
+ */
+export function shouldAddIdentifyingMaterial(hap: BridgeHapConfig | boolean | undefined): boolean {
+  return typeof hap !== 'object' || !hap?.disableIdentifyingMaterial
+}
+
+/**
  * Validate a `hap` config block. Throws on hard errors (wrong type, conflict
- * between `externalsOnly` and `enabled`). For accessory child bridges, strips
- * `externalsOnly` with a warn-level log because externals are not supported
- * via the accessory plugin API.
+ * between `externalsOnly` and `enabled`) and warns when identifying material is
+ * disabled because advertised mDNS service names must remain unique. For
+ * accessory child bridges, strips `externalsOnly` with a warn-level log because
+ * externals are not supported via the accessory plugin API.
  *
  * Mutates the passed block in place when stripping fields.
  */
@@ -171,11 +188,19 @@ export function validateHapConfig(
 
   if (typeof hap !== 'object' || hap === null || Array.isArray(hap)) {
     throw new Error(
-      `${opts.bridgeLabel}: 'hap' must be a boolean or an object with optional 'enabled' and 'externalsOnly' fields, not a ${Array.isArray(hap) ? 'array' : typeof hap}.`,
+      `${opts.bridgeLabel}: 'hap' must be a boolean or an object with optional 'enabled', 'externalsOnly', and 'disableIdentifyingMaterial' fields, not a ${Array.isArray(hap) ? 'array' : typeof hap}.`,
     )
   }
 
   const hapBlock = hap as BridgeHapConfig
+
+  if (hapBlock.disableIdentifyingMaterial !== undefined && typeof hapBlock.disableIdentifyingMaterial !== 'boolean') {
+    throw new Error(`${opts.bridgeLabel}: 'hap.disableIdentifyingMaterial' must be a boolean.`)
+  }
+
+  if (hapBlock.disableIdentifyingMaterial === true) {
+    log.warn(`${opts.bridgeLabel}: HAP identifying material is disabled. Ensure bridge names are unique on your network to avoid mDNS name collisions and pairing instability.`)
+  }
 
   if (hapBlock.externalsOnly === true) {
     if (opts.isAccessoryPlugin) {
@@ -354,7 +379,7 @@ export class BridgeService {
       pincode: bridgeConfig.pin,
       category: Categories.BRIDGE,
       bind: bridgeConfig.bind,
-      addIdentifyingMaterial: true,
+      addIdentifyingMaterial: shouldAddIdentifyingMaterial(bridgeConfig.hap),
       advertiser: bridgeConfig.advertiser,
     }
 
@@ -707,7 +732,7 @@ export class BridgeService {
         category: accessory.category,
         port: accessoryPort,
         bind: this.bridgeConfig.bind,
-        addIdentifyingMaterial: true,
+        addIdentifyingMaterial: shouldAddIdentifyingMaterial(this.bridgeConfig.hap),
         advertiser: this.bridgeConfig.advertiser,
       }
 
