@@ -297,6 +297,27 @@ describe('accessoryManager', () => {
       expect((HomebridgeRvcCleanModeServer as any).with).toHaveBeenCalledWith('DirectModeChange')
     })
 
+    it('leaves direct clean-mode changes disabled unless the plugin opts in', async () => {
+      const deps = createMockDeps()
+      const accessory = createMockAccessory({
+        displayName: 'Test Vacuum',
+        deviceType: createChainableDeviceType({ deviceType: 0x0074, name: 'RoboticVacuumCleaner' }),
+        clusters: {
+          rvcCleanMode: {
+            supportedModes: [{ label: 'Vacuum', mode: 0, modeTags: [{ value: 0x4000 }] }],
+            currentMode: 0,
+          },
+        },
+        handlers: {
+          rvcCleanMode: { changeToMode: vi.fn() },
+        },
+      })
+
+      await manager.registerAccessory('homebridge-test', 'TestPlatform', accessory, deps)
+
+      expect((HomebridgeRvcCleanModeServer as any).with).not.toHaveBeenCalled()
+    })
+
     it('should bump the bridge configuration version when commissioned', async () => {
       const increaseConfigurationVersion = vi.fn()
       const deps = createMockDeps({ isCommissioned: () => true })
