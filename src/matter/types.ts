@@ -96,7 +96,7 @@ export type { EndpointType }
  * Handler context information
  * Provides information about which part of a composed device triggered the handler
  */
-export interface MatterHandlerContext {
+
   /** Parent accessory UUID */
   uuid: string
 
@@ -141,7 +141,7 @@ export interface MatterAccessoryPart {
   displayName?: string
 
   /** Matter device type for this part */
-  deviceType: EndpointType
+  /** * Optional Matter cluster features a plugin can explicitly advertise. * * Features are capabilities, not cluster state. Only enable a feature when the * physical device and the plugin handler implement the corresponding behavior. */export interface MatterAccessoryFeatures {  rvcCleanMode?: {    /** Allow clean-mode changes while the RVC is not idle. */    directModeChange?: boolean  }}export interface MatterHandlerContext {
 
   /**
    * Initial cluster states for this part
@@ -185,7 +185,7 @@ export interface MatterAccessory<T extends UnknownContext = UnknownContext> {
   displayName: string
 
   /** Matter device type (e.g., OnOffLightDevice, DimmableLightDevice, etc.) */
-  deviceType: EndpointType
+  /** * Optional Matter cluster features a plugin can explicitly advertise. * * Features are capabilities, not cluster state. Only enable a feature when the * physical device and the plugin handler implement the corresponding behavior. */export interface MatterAccessoryFeatures {  rvcCleanMode?: {    /** Allow clean-mode changes while the RVC is not idle. */    directModeChange?: boolean  }}export interface MatterHandlerContext {
 
   /** Serial number for the device */
   serialNumber: string
@@ -470,7 +470,7 @@ export interface InternalMatterAccessory extends MatterAccessory {
    * and its plugin has not re-registered yet. The plugin's registration
    * attaches handlers to the existing endpoint instead of erroring.
    *
-  _restoredFromCache?: boolean
+  deviceType: EndpointType  /** Optional Matter cluster features implemented by this endpoint. */  features?: MatterAccessoryFeatures
 
   /** Platform name (set when registered) */
   _associatedPlatform?: string
