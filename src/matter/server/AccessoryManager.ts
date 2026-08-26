@@ -130,7 +130,22 @@ export class AccessoryManager {
       // churns); the plugin's registration attaches its handlers and metadata
       // in place. Structural changes fall through to a fresh registration.
       if (existing?._restoredFromCache) {
-        const partIds = (list?: { id: string }[]) => JSON.stringify((list ?? []).map(part => part.id).sort())
+        const featureShape = (features?: MatterAccessory['features']) => JSON.stringify(
+          Object.entries(features ?? {})
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([clusterName, clusterFeatures]) => [
+              clusterName,
+              Object.entries(clusterFeatures ?? {})
+                .filter(([, enabled]) => enabled === true)
+                .map(([featureName]) => featureName)
+                .sort(),
+            ]),
+        )
+        const partShape = (list?: { id: string, features?: MatterAccessory['features'] }[]) => JSON.stringify(
+          (list ?? [])
+            .map(part => ({ id: part.id, features: featureShape(part.features) }))
+            .sort((left, right) => left.id.localeCompare(right.id)),
+        )
         // ⚠️ The name is not enough. The cache stores a device type as
         // {name, code}, so a restore rebuilds the BASE type - anything the
         // plugin composed itself (via api.matter.deviceRequirements) is gone,
@@ -141,7 +156,8 @@ export class AccessoryManager {
         const behaviorKeys = (deviceType: unknown) =>
           Object.keys((deviceType as { behaviors?: Record<string, unknown> })?.behaviors ?? {}).sort().join(',')
         const sameShape = (existing.deviceType as { name?: string })?.name === (accessory.deviceType as { name?: string })?.name
-          && partIds(existing._parts ?? existing.parts) === partIds(accessory.parts)
+          && partShape(existing._parts ?? existing.parts) === partShape(accessory.parts)
+          && featureShape(existing.features) === featureShape(accessory.features)
           && behaviorKeys(existing.deviceType) === behaviorKeys(accessory.deviceType)
         if (sameShape) {
           log.info(`Attached plugin registration to restored accessory ${accessory.displayName} (${accessory.UUID})`)
@@ -701,7 +717,7 @@ export class AccessoryManager {
           ? HomebridgeRvcCleanModeServer
           : RvcCleanModeServer
 
-        if (accessory.features?.rvcCleanMode?.directModeChange) {
+        if (accessory.features?.rvcCleanMode?.directModeChange === true) {
           behaviorClass = (behaviorClass as any).with('DirectModeChange')
           log.info('RvcCleanMode DirectModeChange feature enabled')
         }
