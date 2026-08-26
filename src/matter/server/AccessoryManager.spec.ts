@@ -311,6 +311,33 @@ describe('accessoryManager', () => {
         handlers: {
           rvcCleanMode: { changeToMode: vi.fn() },
         },
+        features: {
+          rvcCleanMode: { directModeChange: false },
+        },
+      })
+
+      await manager.registerAccessory('homebridge-test', 'TestPlatform', accessory, deps)
+
+      expect((HomebridgeRvcCleanModeServer as any).with).not.toHaveBeenCalled()
+    })
+
+    it('does not treat a truthy non-boolean feature value as an opt-in', async () => {
+      const deps = createMockDeps()
+      const accessory = createMockAccessory({
+        displayName: 'Test Vacuum',
+        deviceType: createChainableDeviceType({ deviceType: 0x0074, name: 'RoboticVacuumCleaner' }),
+        clusters: {
+          rvcCleanMode: {
+            supportedModes: [{ label: 'Vacuum', mode: 0, modeTags: [{ value: 0x4000 }] }],
+            currentMode: 0,
+          },
+        },
+        handlers: {
+          rvcCleanMode: { changeToMode: vi.fn() },
+        },
+        features: {
+          rvcCleanMode: { directModeChange: 'true' },
+        } as any,
       })
 
       await manager.registerAccessory('homebridge-test', 'TestPlatform', accessory, deps)
@@ -466,6 +493,69 @@ describe('accessoryManager', () => {
         const stored = deps.accessories.get('test-uuid-001') as any
         expect(stored.endpoint).not.toEqual({ marker: 'restored-endpoint', close: expect.anything() })
         expect(stored.registered).toBe(true)
+      })
+
+      it('re-registers when an explicit endpoint feature changes after cache restore', async () => {
+        const deps = createMockDeps()
+        const restored = {
+          ...createMockAccessory(),
+          endpoint: { marker: 'restored-endpoint', close: vi.fn() },
+          registered: false,
+          _restoredFromCache: true,
+        } as any
+        deps.accessories.set('test-uuid-001', restored)
+        const unregisterSpy = vi.spyOn(manager, 'unregisterAccessory')
+
+        const pluginAccessory = createMockAccessory({
+          features: {
+            rvcCleanMode: { directModeChange: true },
+          },
+        })
+
+        await manager.registerAccessory('homebridge-test', 'TestPlatform', pluginAccessory, deps)
+
+        expect(unregisterSpy).toHaveBeenCalledWith('test-uuid-001', deps)
+        expect((deps.accessories.get('test-uuid-001') as any).endpoint).not.toBe(restored.endpoint)
+      })
+
+      it('re-registers when a composed part feature changes after cache restore', async () => {
+        const deps = createMockDeps()
+        const part = (directModeChange?: boolean) => ({
+          id: 'vacuum-part',
+          displayName: 'Vacuum Part',
+          deviceType: createChainableDeviceType({ deviceType: 0x0074, name: 'RoboticVacuumCleaner' }),
+          features: directModeChange === undefined
+            ? undefined
+            : { rvcCleanMode: { directModeChange } },
+          clusters: {
+            rvcCleanMode: {
+              supportedModes: [{ label: 'Vacuum', mode: 0, modeTags: [{ value: 0x4000 }] }],
+              currentMode: 0,
+            },
+          },
+          handlers: {
+            rvcCleanMode: { changeToMode: vi.fn() },
+          },
+        })
+        const restoredPart = part()
+        const restored = {
+          ...createMockAccessory({ parts: [restoredPart] }),
+          endpoint: { marker: 'restored-endpoint', close: vi.fn() },
+          _parts: [restoredPart],
+          registered: false,
+          _restoredFromCache: true,
+        } as any
+        deps.accessories.set('test-uuid-001', restored)
+        const unregisterSpy = vi.spyOn(manager, 'unregisterAccessory')
+
+        const pluginAccessory = createMockAccessory({
+          parts: [part(true)],
+        } as any)
+
+        await manager.registerAccessory('homebridge-test', 'TestPlatform', pluginAccessory, deps)
+
+        expect(unregisterSpy).toHaveBeenCalledWith('test-uuid-001', deps)
+        expect((deps.accessories.get('test-uuid-001') as any).endpoint).not.toBe(restored.endpoint)
       })
 
       it('does not throw the duplicate-UUID error for a restored accessory', async () => {
