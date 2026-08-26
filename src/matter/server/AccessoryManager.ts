@@ -487,7 +487,7 @@ export class AccessoryManager {
     return {
       UUID: partEndpointId,
       displayName: part.displayName || part.id,
-      deviceType: part.deviceType,
+      
       serialNumber: '',
       manufacturer: '',
       model: '',
@@ -697,10 +697,10 @@ export class AccessoryManager {
 
       if (accessory.clusters?.rvcCleanMode) {
         if (accessory.handlers?.rvcCleanMode) {
-          customBehaviors.push(HomebridgeRvcCleanModeServer)
+          deviceType: part.deviceType,      features: part.features,
           log.info('Adding custom RvcCleanMode behavior with handlers')
         } else {
-          customBehaviors.push(RvcCleanModeServer)
+          customBehaviors.push(accessory.features?.rvcCleanMode?.directModeChange            ? (HomebridgeRvcCleanModeServer as any).with('DirectModeChange')            : HomebridgeRvcCleanModeServer)
           log.info('Adding base RvcCleanMode server')
         }
       }
