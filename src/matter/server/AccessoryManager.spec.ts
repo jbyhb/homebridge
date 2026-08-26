@@ -461,6 +461,27 @@ describe('accessoryManager', () => {
         expect(deps.behaviorRegistry.registerHandler).toHaveBeenCalledWith('test-uuid-001', 'onOff', 'on', expect.any(Function))
       })
 
+      it('treats an omitted feature and an explicit false value as the same shape', async () => {
+        const deps = createMockDeps()
+        const restored = {
+          ...createMockAccessory({
+            features: {
+              rvcCleanMode: { directModeChange: false },
+            },
+          }),
+          endpoint: { marker: 'restored-endpoint' },
+          registered: false,
+          _restoredFromCache: true,
+        } as any
+        deps.accessories.set('test-uuid-001', restored)
+        const unregisterSpy = vi.spyOn(manager, 'unregisterAccessory')
+
+        await manager.registerAccessory('homebridge-test', 'TestPlatform', createMockAccessory(), deps)
+
+        expect(unregisterSpy).not.toHaveBeenCalled()
+        expect((deps.accessories.get('test-uuid-001') as any).endpoint).toBe(restored.endpoint)
+      })
+
       // ⚠️ The cache stores a device type as {name, code} only, so composed
       // features do not survive it - a restore rebuilds the BASE type. A plugin
       // that used api.matter.deviceRequirements to compose the cluster itself
