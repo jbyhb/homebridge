@@ -27,6 +27,7 @@ export interface SerializedMatterAccessoryPart {
     code?: number
   }
   features?: InternalMatterAccessory['features']
+  clusters: {
     [clusterName: string]: {
       [attributeName: string]: unknown
     }
@@ -46,6 +47,7 @@ export interface SerializedMatterAccessory {
     name?: string
     code?: number
   }
+  features?: InternalMatterAccessory['features']
   serialNumber: string
   manufacturer: string
   model: string
@@ -290,6 +292,7 @@ export class MatterAccessoryCache {
             code: partDeviceType?.code,
           },
           features: structuredClone(part.features),
+          clusters: structuredClone(part.clusters),
         }
       })
     }
@@ -299,7 +302,8 @@ export class MatterAccessoryCache {
       platform: accessory._associatedPlatform || '',
       uuid: accessory.UUID,
       displayName: accessory.displayName,
-      features: structuredClone(part.features),          clusters: structuredClone(part.clusters),
+      deviceType: deviceTypeInfo,
+      features: structuredClone(accessory.features),
       serialNumber: accessory.serialNumber,
       manufacturer: accessory.manufacturer,
       model: accessory.model,
