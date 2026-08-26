@@ -487,7 +487,8 @@ export class AccessoryManager {
     return {
       UUID: partEndpointId,
       displayName: part.displayName || part.id,
-      
+      deviceType: part.deviceType,
+      features: part.features,
       serialNumber: '',
       manufacturer: '',
       model: '',
@@ -696,13 +697,17 @@ export class AccessoryManager {
       const { RvcCleanModeServer, ServiceAreaServer } = devices.RoboticVacuumCleanerRequirements
 
       if (accessory.clusters?.rvcCleanMode) {
-        if (accessory.handlers?.rvcCleanMode) {
-          deviceType: part.deviceType,      features: part.features,
-          log.info('Adding custom RvcCleanMode behavior with handlers')
-        } else {
-          customBehaviors.push(accessory.features?.rvcCleanMode?.directModeChange            ? (HomebridgeRvcCleanModeServer as any).with('DirectModeChange')            : HomebridgeRvcCleanModeServer)
-          log.info('Adding base RvcCleanMode server')
+        let behaviorClass: BehaviorType = accessory.handlers?.rvcCleanMode
+          ? HomebridgeRvcCleanModeServer
+          : RvcCleanModeServer
+
+        if (accessory.features?.rvcCleanMode?.directModeChange) {
+          behaviorClass = (behaviorClass as any).with('DirectModeChange')
+          log.info('RvcCleanMode DirectModeChange feature enabled')
         }
+
+        customBehaviors.push(behaviorClass)
+        log.info(`Adding ${accessory.handlers?.rvcCleanMode ? 'custom' : 'base'} RvcCleanMode server`)
       }
 
       if (accessory.clusters?.serviceArea) {
