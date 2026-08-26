@@ -475,7 +475,8 @@ export class MatterServer extends EventEmitter {
                 id: part.id,
                 displayName: part.displayName,
                 deviceType: typeByName.get(part.deviceType?.name ?? ''),
-                
+                features: part.features,
+                clusters: part.clusters ?? {},
                 handlers: stubHandlers(part.clusters),
               }))
               .filter((part): part is typeof part & { deviceType: EndpointType } => part.deviceType !== undefined)
@@ -490,7 +491,8 @@ export class MatterServer extends EventEmitter {
               firmwareRevision: serialized.firmwareRevision,
               hardwareRevision: serialized.hardwareRevision,
               softwareVersion: serialized.softwareVersion,
-              features: part.features,                clusters: part.clusters ?? {},
+              features: serialized.features,
+              context: serialized.context ?? {},
               clusters: serialized.clusters ?? {},
               handlers: stubHandlers(serialized.clusters),
               registered: false,
