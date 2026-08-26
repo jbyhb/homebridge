@@ -93,10 +93,6 @@ type BehaviorType = Behavior.Type
 export type { EndpointType }
 
 /**
- * Handler context information
- * Provides information about which part of a composed device triggered the handler
- */
-/**
  * Optional Matter cluster features a plugin can explicitly advertise.
  *
  * Features are capabilities, not cluster state. Only enable a feature when the
@@ -109,6 +105,10 @@ export interface MatterAccessoryFeatures {
   }
 }
 
+/**
+ * Handler context information
+ * Provides information about which part of a composed device triggered the handler
+ */
 export interface MatterHandlerContext {
   /** Parent accessory UUID */
   uuid: string
