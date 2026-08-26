@@ -6,6 +6,7 @@ import { PowerSourceServer } from '@matter/node/behaviors'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Logger } from '../../logger.js'
+import { HomebridgeRvcCleanModeServer } from '../behaviors/RvcCleanModeBehavior.js'
 import {
   applyElectricalMeasurementClusters,
   applyElectricalMeasurementDefaults,
@@ -67,7 +68,10 @@ vi.mock('../behaviors/EndpointContext.js', () => ({
   setRegistryManager: vi.fn(),
 }))
 vi.mock('../behaviors/RvcCleanModeBehavior.js', () => ({
-  HomebridgeRvcCleanModeServer: { name: 'HomebridgeRvcCleanModeServer' },
+  HomebridgeRvcCleanModeServer: {
+    name: 'HomebridgeRvcCleanModeServer',
+    with: vi.fn((...args: any[]) => ({ name: `HomebridgeRvcCleanModeServer.with(${args.join(',')})` })),
+  },
 }))
 vi.mock('../behaviors/ServiceAreaBehavior.js', () => ({
   HomebridgeServiceAreaServer: {
@@ -117,7 +121,10 @@ vi.mock('../types.js', () => {
       ThermostatDevice: { deviceType: 0x0301 },
       ElectricalSensorEndpoint: { deviceType: 0x0510 },
       RoboticVacuumCleanerRequirements: {
-        RvcCleanModeServer: { name: 'RvcCleanModeServer' },
+        RvcCleanModeServer: {
+          name: 'RvcCleanModeServer',
+          with: vi.fn((...args: any[]) => ({ name: `RvcCleanModeServer.with(${args.join(',')})` })),
+        },
         ServiceAreaServer: {
           name: 'ServiceAreaServer',
           with: vi.fn((...args: any[]) => ({ name: `ServiceAreaServer.with(${args.join(',')})` })),
@@ -264,6 +271,30 @@ describe('accessoryManager', () => {
 
       expect(deps.accessories.size).toBe(1)
       expect(deps.accessories.has('test-uuid-001')).toBe(true)
+    })
+
+    it('advertises direct clean-mode changes only when the plugin opts in', async () => {
+      const deps = createMockDeps()
+      const accessory = createMockAccessory({
+        displayName: 'Test Vacuum',
+        deviceType: createChainableDeviceType({ deviceType: 0x0074, name: 'RoboticVacuumCleaner' }),
+        clusters: {
+          rvcCleanMode: {
+            supportedModes: [{ label: 'Vacuum', mode: 0, modeTags: [{ value: 0x4000 }] }],
+            currentMode: 0,
+          },
+        },
+        handlers: {
+          rvcCleanMode: { changeToMode: vi.fn() },
+        },
+        features: {
+          rvcCleanMode: { directModeChange: true },
+        },
+      })
+
+      await manager.registerAccessory('homebridge-test', 'TestPlatform', accessory, deps)
+
+      expect((HomebridgeRvcCleanModeServer as any).with).toHaveBeenCalledWith('DirectModeChange')
     })
 
     it('should bump the bridge configuration version when commissioned', async () => {
