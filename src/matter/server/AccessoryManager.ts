@@ -133,13 +133,14 @@ export class AccessoryManager {
         const featureShape = (features?: MatterAccessory['features']) => JSON.stringify(
           Object.entries(features ?? {})
             .sort(([left], [right]) => left.localeCompare(right))
-            .map(([clusterName, clusterFeatures]) => [
+            .map(([clusterName, clusterFeatures]) => ({
               clusterName,
-              Object.entries(clusterFeatures ?? {})
+              enabledFeatures: Object.entries(clusterFeatures ?? {})
                 .filter(([, enabled]) => enabled === true)
                 .map(([featureName]) => featureName)
                 .sort(),
-            ]),
+            }))
+            .filter(({ enabledFeatures }) => enabledFeatures.length > 0),
         )
         const partShape = (list?: { id: string, features?: MatterAccessory['features'] }[]) => JSON.stringify(
           (list ?? [])
