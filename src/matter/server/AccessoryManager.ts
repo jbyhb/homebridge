@@ -719,6 +719,11 @@ export class AccessoryManager {
           : RvcCleanModeServer
 
         if (accessory.features?.rvcCleanMode?.directModeChange === true) {
+          if (!accessory.handlers?.rvcCleanMode?.changeToMode) {
+            log.warn(
+              `[${accessory.displayName}] rvcCleanMode.directModeChange is declared but there is no changeToMode handler - controllers will offer mid-run mode changes that nothing implements`,
+            )
+          }
           behaviorClass = (behaviorClass as any).with('DirectModeChange')
           log.info('RvcCleanMode DirectModeChange feature enabled')
         }
