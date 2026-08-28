@@ -295,6 +295,38 @@ describe('accessoryManager', () => {
       await manager.registerAccessory('homebridge-test', 'TestPlatform', accessory, deps)
 
       expect((HomebridgeRvcCleanModeServer as any).with).toHaveBeenCalledWith('DirectModeChange')
+      expect(Logger.withPrefix('Matter/Server').warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('rvcCleanMode.directModeChange is declared'),
+      )
+    })
+
+    it('warns when direct clean-mode changes are declared without a change handler', async () => {
+      const deps = createMockDeps()
+      const accessory = createMockAccessory({
+        displayName: 'Test Vacuum',
+        deviceType: createChainableDeviceType({ deviceType: 0x0074, name: 'RoboticVacuumCleaner' }),
+        clusters: {
+          rvcCleanMode: {
+            supportedModes: [{ label: 'Vacuum', mode: 0, modeTags: [{ value: 0x4000 }] }],
+            currentMode: 0,
+          },
+        },
+        handlers: {
+          rvcCleanMode: {},
+        },
+        features: {
+          rvcCleanMode: { directModeChange: true },
+        },
+      })
+
+      await manager.registerAccessory('homebridge-test', 'TestPlatform', accessory, deps)
+
+      expect(Logger.withPrefix('Matter/Server').warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'rvcCleanMode.directModeChange is declared but there is no changeToMode handler',
+        ),
+      )
+      expect((HomebridgeRvcCleanModeServer as any).with).toHaveBeenCalledWith('DirectModeChange')
     })
 
     it('leaves direct clean-mode changes disabled unless the plugin opts in', async () => {
